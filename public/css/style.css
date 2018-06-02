@@ -18,3 +18,13 @@
 #titleContainer {
     color: rgb(8, 8, 8);
  }
+
+ a {
+    text-decoration: none;
+    color: white;
+ }
+
+ .saveArticleButton{
+     background-color: green;
+     border-color: green;
+ }

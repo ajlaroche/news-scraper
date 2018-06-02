@@ -32,20 +32,10 @@ db.on("error", function (error) {
 //     console.log("Mongoose connection successful.");
 // });
 
-var hbsObject={};
+var hbsObject = {};
 
 router.get("/", function (req, res) {
-    // db.scrapedData.find({}, function (err, found) {
-    //     if (err) {
-    //         console.log(err);
-    //     } else {
-            
-    //         var hbsObject = { articles: found };
-    //         console.log(hbsObject);
-    //         res.render("index", hbsObject);
-    //     };
-    // });
-    res.render("index", hbsObject);
+    res.render("index");
 });
 
 router.get("/all", function (req, res) {
@@ -86,31 +76,31 @@ router.get("/scrape", function (req, res) {
                 };
             };
 
+
             if (title && link && !test) {
-                // console.log("title: " + title + " link: " + link + " summary: " + summary + " author: " + author);
-                // console.log(summary);
                 db.scrapedData.save({
                     title: title,
                     link: link,
                     summary: summary,
-                    author: author
+                    author: author,
+                    scrapedOn: Date()
                 }, function (error, saved) {
                     if (error) {
                         console.log(error);
                     } else {
-                        console.log(saved);
+                        // console.log(saved);
                     }
                 });
             }
         });
-        db.scrapedData.find({}, function (err, found) {
+        db.scrapedData.find().sort({ scrapedOn: -1 }).limit(30, function (err, found) {
             if (err) {
                 console.log(err);
             } else {
-                
+
                 hbsObject = { articles: found };
-                console.log(hbsObject);
-                res.redirect("/");
+                // console.log(hbsObject);
+                res.render("scraped", hbsObject);
             };
         });
 
