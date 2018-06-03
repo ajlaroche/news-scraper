@@ -28,3 +28,13 @@
      background-color: green;
      border-color: green;
  }
+ .noteArticleButton{
+    background-color: burlywood;
+    border-color: burlywood;
+    color: black;
+}
+
+.deleteArticleButton{
+    background-color: red;
+    border-color: red;
+}

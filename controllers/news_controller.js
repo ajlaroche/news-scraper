@@ -5,32 +5,25 @@ var cheerio = require("cheerio");
 var mongoose = require("mongoose");
 var mongojs = require("mongojs");
 
-var databaseUrl = "mongoHeadlines"
-var collections = ["scrapedData"];
+var db = require("../models");
 
-var db = mongojs(databaseUrl, collections);
+// var databaseUrl = "mongoHeadlines"
+// var collections = ["scrapedData"];
 
-db.on("error", function (error) {
-    console.log("Mongoose Error: ", error);
-});
+// var db = mongojs(databaseUrl, collections);
 
-// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
-// var MONGODB_URI = "process.env.MONGODB_URI || mongodb://localhost/mongoHeadlines";
-
-// // Set mongoose to leverage built in JavaScript ES6 Promises
-// // Connect to the Mongo DB
-// mongoose.Promise = Promise;
-// mongoose.connect(MONGODB_URI);
-
-// var dbmon = mongoose.connection;
-
-// dbmon.on("error", function(error){
+// db.on("error", function (error) {
 //     console.log("Mongoose Error: ", error);
 // });
 
-// dbmon.once("open", function(){
-//     console.log("Mongoose connection successful.");
-// });
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/techcrunch";
+
+// Set mongoose to leverage built in JavaScript ES6 Promises
+// Connect to the Mongo DB
+mongoose.Promise = Promise;
+mongoose.connect(MONGODB_URI);
+// mongoose.connect("mongodb://localhost/techcrunch");
 
 var hbsObject = {};
 
@@ -39,24 +32,44 @@ router.get("/", function (req, res) {
 });
 
 router.get("/all", function (req, res) {
-    db.scrapedData.find({}, function (err, found) {
-        if (err) {
-            console.log(err);
-        } else {
+    db.Article.find({})
+        .then(function (found) {
             res.json(found);
-        }
-    });
+        }).catch(function (err) {
+            res.json(err);
+        });
+});
+
+router.get("/saved", function (req, res) {
+    db.Article.find({saved:true})
+        .then(function (found) {
+            hbsObject = { articles: found };
+            // console.log(hbsObject);
+            res.render("saved", hbsObject);
+        }).catch(function (err) {
+            res.json(err);
+        });
+});
+
+router.get("/saved/:id", function (req, res) {
+    db.Article.findOne({_id: req.params.id})
+        .populate("note")
+        .then(function (found) {
+            console.log(found);
+            res.json(found);
+        }).catch(function (err) {
+            res.json(err);
+        });
 });
 
 router.get("/scrape", function (req, res) {
     var currentData = [];
-    db.scrapedData.find({}, function (err, found) {
-        if (err) {
-            console.log(err);
-        } else {
+    db.Article.find({})
+        .then(function (found) {
             currentData = found;
-        }
-    });
+        }).catch(function (err) {
+            console.log(err);
+        });
 
 
     request("https://techcrunch.com/", function (error, response, html) {
@@ -77,35 +90,53 @@ router.get("/scrape", function (req, res) {
             };
 
 
-            if (title && link && !test) {
-                db.scrapedData.save({
+            if (title && link && summary && !test) {
+
+                db.Article.create({
                     title: title,
                     link: link,
                     summary: summary,
                     author: author,
-                    scrapedOn: Date()
-                }, function (error, saved) {
-                    if (error) {
-                        console.log(error);
-                    } else {
-                        // console.log(saved);
-                    }
+                }).then(function (saved) {
+                    console.log(saved);
+                }).catch(function (err) {
+                    console.log(err);
                 });
-            }
-        });
-        db.scrapedData.find().sort({ scrapedOn: -1 }).limit(30, function (err, found) {
-            if (err) {
-                console.log(err);
-            } else {
-
-                hbsObject = { articles: found };
-                // console.log(hbsObject);
-                res.render("scraped", hbsObject);
             };
         });
 
+
+        db.Article.find({}).sort({ scrapedOn: -1 }).limit(30).then(function (found) {
+            hbsObject = { articles: found };
+            // console.log(hbsObject);
+            res.render("scraped", hbsObject);
+        }).catch(function(err){
+            console.log(err);
+        });
     });
 
+});
+
+router.post("/articles/:id", function(req, res){
+    db.Article.findOneAndUpdate({_id:req.params.id},{saved:req.body.saved},{new: true}).then(function(dbArticle){
+        console.log(dbArticle);
+        res.sendStatus(200);
+    }).catch(function(err){
+        console.log(err)
+    });
+});
+
+router.post("/saved/:id", function(req, res){
+    db.Note.create(req.body).then(function(dbNote){
+        return db.Article.findOneAndUpdate({_id: req.params.id}, {note: dbNote._id}, {new: true});
+    })
+    .then(function(dbArticle){
+        console.log(dbArticle);
+        res.sendStatus(200);
+    })
+    .catch(function(err){
+        res.json(err);
+    });
 });
 
 module.exports = router;
