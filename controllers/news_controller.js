@@ -40,8 +40,9 @@ router.get("/all", function (req, res) {
         });
 });
 
+// Get all the saved articles
 router.get("/saved", function (req, res) {
-    db.Article.find({saved:true})
+    db.Article.find({ saved: true })
         .then(function (found) {
             hbsObject = { articles: found };
             // console.log(hbsObject);
@@ -50,9 +51,9 @@ router.get("/saved", function (req, res) {
             res.json(err);
         });
 });
-
+//Find note associated with associated with saved article id when add note button is hit
 router.get("/saved/:id", function (req, res) {
-    db.Article.findOne({_id: req.params.id})
+    db.Article.findOne({ _id: req.params.id })
         .populate("note")
         .then(function (found) {
             console.log(found);
@@ -110,33 +111,61 @@ router.get("/scrape", function (req, res) {
             hbsObject = { articles: found };
             // console.log(hbsObject);
             res.render("scraped", hbsObject);
-        }).catch(function(err){
+        }).catch(function (err) {
             console.log(err);
         });
     });
 
 });
 
-router.post("/articles/:id", function(req, res){
-    db.Article.findOneAndUpdate({_id:req.params.id},{saved:req.body.saved},{new: true}).then(function(dbArticle){
+//Change article status to saved.
+router.post("/articles/:id", function (req, res) {
+    db.Article.findOneAndUpdate({ _id: req.params.id }, { saved: req.body.saved }, { new: true }).then(function (dbArticle) {
         console.log(dbArticle);
         res.sendStatus(200);
-    }).catch(function(err){
+    }).catch(function (err) {
         console.log(err)
     });
 });
 
-router.post("/saved/:id", function(req, res){
-    db.Note.create(req.body).then(function(dbNote){
-        return db.Article.findOneAndUpdate({_id: req.params.id}, {note: dbNote._id}, {new: true});
-    })
-    .then(function(dbArticle){
-        console.log(dbArticle);
-        res.sendStatus(200);
-    })
-    .catch(function(err){
-        res.json(err);
-    });
+//Add a new note to an article or modify an exisiting one
+router.post("/saved/:id_Article/:id_Note", function (req, res) {
+    if (req.params.id_Note==0) {
+        db.Note.create(req.body).then(function (dbNote) {
+            return db.Article.findOneAndUpdate({ _id: req.params.id_Article }, { note: dbNote._id }, { new: true });
+        })
+            .then(function (dbArticle) {
+                console.log(dbArticle);
+                res.sendStatus(200);
+            })
+            .catch(function (err) {
+                res.json(err);
+            });
+    } else {
+        db.Note.findOneAndUpdate({_id: req.params.id_Note}, {body: req.body.body}).then(function (dbNote) {
+            return db.Article.findOneAndUpdate({ _id: req.params.id_Article }, { note: dbNote._id }, { new: true });
+        })
+            .then(function (dbArticle) {
+                console.log(dbArticle);
+                res.sendStatus(200);
+            })
+            .catch(function (err) {
+                res.json(err);
+            });
+    }
 });
+
+router.delete("/saved/:id_Article/:id_Note", function(req, res){
+    db.Note.findOneAndRemove({_id: req.params.id_Note}).then(function (dbNote) {
+        return db.Article.findOneAndUpdate({ _id: req.params.id_Article }, { $unset: {note: 1 }}, { new: true });
+    })
+        .then(function (dbArticle) {
+            console.log(dbArticle);
+            res.sendStatus(200);
+        })
+        .catch(function (err) {
+            res.json(err);
+        });
+})
 
 module.exports = router;

@@ -38,3 +38,13 @@
     background-color: red;
     border-color: red;
 }
+
+.notes {
+    min-width: 25rem;
+    border-style: none;
+}
+
+.noteDelete {
+    color: red;
+    font-size: 2rem;
+}
