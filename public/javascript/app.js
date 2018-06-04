@@ -2,9 +2,10 @@ $(document).ready(function () {
 
     $("#scrapeButton").on("click", function () {
         window.location.href = "/scrape";
-    });
 
+    });
     $("#scraperModal").modal();
+
 
     $(document).on("click", ".saveArticleButton", function () {
         var thisId = $(this).attr("data-articleId");
@@ -31,35 +32,35 @@ $(document).ready(function () {
         })
     });
 
-    var articleId="";
-    var noteId="";
+    var articleId = "";
+    var noteId = "";
 
     // When the add note to article button is clicked, ajax call checks for existing notes and loads them
     $(document).on("click", ".noteArticleButton", function () {
         $("#notes").empty();
         $("#userNotes").val("");
-        noteId="0";
+        noteId = "0";
         articleId = $(this).attr("data-articleId");
         $("#noteModalTitle").text("Notes for article ID " + articleId);
         $.ajax({
-            method:"GET",
+            method: "GET",
             url: "/saved/" + articleId
-        }).then(function(data){
+        }).then(function (data) {
             console.log(data.note);
-            if(data.note){
+            if (data.note) {
                 noteId = data.note._id;
-            $("#notes").append(`<textarea readonly disabled class='notes' placeholder='this article does not have any notes yet'> ${data.note.body} </textarea> <button type='button' data-noteId= ${noteId} class='close noteDelete' aria-label='Close'><span aria-hidden='true'>&times;</span></button>`);
-            $("#userNotes").val(data.note.body);
+                $("#notes").append(`<textarea readonly disabled class='notes' placeholder='this article does not have any notes yet'> ${data.note.body} </textarea> <button type='button' data-noteId= ${noteId} class='close noteDelete' aria-label='Close'><span aria-hidden='true'>&times;</span></button>`);
+                $("#userNotes").val(data.note.body);
             };
         });
     });
 
     //Delete note associated with article
-    $(document).on("click",".noteDelete", function(){
+    $(document).on("click", ".noteDelete", function () {
         $.ajax({
             method: "DELETE",
             url: "/saved/" + articleId + "/" + noteId,
-        }).then(function(){
+        }).then(function () {
             $("#notes").empty();
             $("#userNotes").val("");
             location.reload();
